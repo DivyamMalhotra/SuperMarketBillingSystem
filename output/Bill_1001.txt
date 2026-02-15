@@ -1,0 +1,15 @@
+=========== SUPER MARKET RECEIPT ==========
+Bill No: 1001
+Date: Sun Feb 15 18:47:22 2026
+Customer: Divu
+Phone: 999999999
+--------------------------------------------
+Item           Price     Qty       Total     
+Milk           50        1         50        
+--------------------------------------------
+Subtotal: 50
+GST (5%): 2.5
+Discount: 0
+Final Total: 52.5
+============================================
+Thank You For Shopping!

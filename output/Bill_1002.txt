@@ -1,0 +1,16 @@
+=========== SUPER MARKET RECEIPT ==========
+Bill No: 1002
+Date: Sun Feb 15 18:48:17 2026
+Customer: divyam
+Phone: 999999999
+--------------------------------------------
+Item           Price     Qty       Total     
+Milk           50        1         50        
+Chips          20        4         80        
+--------------------------------------------
+Subtotal: 130
+GST (5%): 6.5
+Discount: 0
+Final Total: 136.5
+============================================
+Thank You For Shopping!

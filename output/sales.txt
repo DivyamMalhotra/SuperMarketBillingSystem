@@ -1,0 +1,3 @@
+BillNo: 1000 Customer: Divyam Total: 0
+BillNo: 1001 Customer: Divu Total: 52.5
+BillNo: 1002 Customer: divyam Total: 136.5

@@ -1,181 +1,248 @@
 #include <iostream>
 #include <fstream>
-#include <sstream>
+#include <iomanip>
+#include <ctime>
+#include <vector>
 using namespace std;
 
-void clearScreen() {
-    cout << string(50, '\n');
+#define GST 0.05
+
+int generateBillNo() {
+    ifstream in("billno.txt");
+    int billNo = 1000;
+    if (in) in >> billNo;
+    in.close();
+
+    ofstream out("billno.txt");
+    out << billNo + 1;
+    out.close();
+
+    return billNo;
 }
 
-class Bill {
-private:
-    string Item;
-    int Rate, Quantity;
+string currentDateTime() {
+    time_t now = time(0);
+    return string(ctime(&now));
+}
 
+class Item {
 public:
-    Bill() : Item(""), Rate(0), Quantity(0) {}
-
-    void setItem(string item) { Item = item; }
-    void setRate(int rate) { Rate = rate; }
-    void setQuant(int quant) { Quantity = quant; }
-
-    string getItem() { return Item; }
-    int getRate() { return Rate; }
-    int getQuant() { return Quantity; }
+    string name;
+    double price;
+    int quantity;
 };
 
-void addItem(Bill &b) {
-    bool close = false;
+class SuperMarket {
+private:
+    string inventoryFile = "inventory.txt";
 
-    while (!close) {
-        int choice;
-        cout << "\n\t1. Add Item";
-        cout << "\n\t2. Close";
-        cout << "\n\tEnter Choice: ";
-        cin >> choice;
+public:
 
-        if (choice == 1) {
-            clearScreen();
+    void adminLogin() {
+        string user, pass;
+        cout << "\nAdmin Login\n";
+        cout << "Username: ";
+        cin >> user;
+        cout << "Password: ";
+        cin >> pass;
 
-            string item;
-            int rate, quant;
-
-            cout << "\tEnter Item Name: ";
-            cin >> item;
-            b.setItem(item);
-
-            cout << "\tEnter Rate Of Item: ";
-            cin >> rate;
-            b.setRate(rate);
-
-            cout << "\tEnter Quantity Of Item: ";
-            cin >> quant;
-            b.setQuant(quant);
-
-            ofstream out("Bill.txt", ios::app);
-            if (!out) {
-                cout << "\tError: File Can't Open!\n";
-            } else {
-                out << b.getItem() << " "
-                    << b.getRate() << " "
-                    << b.getQuant() << endl;
-                cout << "\tItem Added Successfully!\n";
-            }
-            out.close();
-        }
-
-        else if (choice == 2) {
-            close = true;
-            cout << "\tBack To Main Menu!\n";
-        }
+        if (user == "admin" && pass == "1234")
+            adminPanel();
+        else
+            cout << "Invalid Credentials!\n";
     }
-}
 
-void printBill() {
-    clearScreen();
-    int total = 0;
-    bool close = false;
-
-    while (!close) {
+    void adminPanel() {
         int choice;
-        cout << "\n\t1. Add To Bill";
-        cout << "\n\t2. Close Session";
-        cout << "\n\tEnter Choice: ";
-        cin >> choice;
+        do {
+            cout << "\n--- ADMIN PANEL ---\n";
+            cout << "1. Add Item\n";
+            cout << "2. View Inventory\n";
+            cout << "3. View Sales Report\n";
+            cout << "4. Back\n";
+            cout << "Enter Choice: ";
+            cin >> choice;
 
-        if (choice == 1) {
-            string item;
-            int quant;
+            if (choice == 1) addItem();
+            else if (choice == 2) viewInventory();
+            else if (choice == 3) viewSales();
 
-            cout << "\tEnter Item: ";
-            cin >> item;
-            cout << "\tEnter Quantity: ";
-            cin >> quant;
+        } while (choice != 4);
+    }
 
-            ifstream in("Bill.txt");
-            ofstream out("Temp.txt");
+    void addItem() {
+        Item item;
+        cout << "\nEnter Item Name: ";
+        cin >> item.name;
+        cout << "Enter Price: ";
+        cin >> item.price;
+        cout << "Enter Quantity: ";
+        cin >> item.quantity;
 
-            if (!in) {
-                cout << "\tFile Not Found!\n";
-                return;
-            }
+        ofstream out(inventoryFile, ios::app);
+        out << item.name << " "
+            << item.price << " "
+            << item.quantity << endl;
+        out.close();
 
+        cout << "Item Added Successfully!\n";
+    }
+
+    void viewInventory() {
+        ifstream in(inventoryFile);
+        Item item;
+
+        cout << "\n--- INVENTORY ---\n";
+        cout << left << setw(15) << "Item"
+             << setw(10) << "Price"
+             << setw(10) << "Qty" << endl;
+
+        while (in >> item.name >> item.price >> item.quantity) {
+            cout << left << setw(15) << item.name
+                 << setw(10) << item.price
+                 << setw(10) << item.quantity << endl;
+        }
+        in.close();
+    }
+
+    void billing() {
+        string customerName, phone;
+        cout << "\nCustomer Name: ";
+        cin >> customerName;
+        cout << "Phone Number: ";
+        cin >> phone;
+
+        vector<Item> cart;
+        char choice;
+
+        do {
             string itemName;
-            int itemRate, itemQuant;
+            int qty;
+            cout << "\nEnter Item Name: ";
+            cin >> itemName;
+            cout << "Enter Quantity: ";
+            cin >> qty;
+
+            ifstream in(inventoryFile);
+            ofstream temp("temp.txt");
+
+            Item item;
             bool found = false;
 
-            while (in >> itemName >> itemRate >> itemQuant) {
-                if (item == itemName) {
+            while (in >> item.name >> item.price >> item.quantity) {
+                if (item.name == itemName) {
                     found = true;
+                    if (qty <= item.quantity) {
+                        item.quantity -= qty;
 
-                    if (quant <= itemQuant) {
-                        int amount = itemRate * quant;
-                        cout << "\n\tItem | Rate | Qty | Amount\n";
-                        cout << "\t" << itemName << " | "
-                             << itemRate << " | "
-                             << quant << " | "
-                             << amount << endl;
-
-                        total += amount;
-                        itemQuant -= quant;
+                        Item purchased;
+                        purchased.name = item.name;
+                        purchased.price = item.price;
+                        purchased.quantity = qty;
+                        cart.push_back(purchased);
                     } else {
-                        cout << "\tNot Enough Stock!\n";
+                        cout << "Insufficient Stock!\n";
                     }
                 }
-
-                out << itemName << " "
-                    << itemRate << " "
-                    << itemQuant << endl;
-            }
-
-            if (!found) {
-                cout << "\tItem Not Available!\n";
+                temp << item.name << " "
+                     << item.price << " "
+                     << item.quantity << endl;
             }
 
             in.close();
-            out.close();
+            temp.close();
+            remove("inventory.txt");
+            rename("temp.txt", "inventory.txt");
 
-            remove("Bill.txt");
-            rename("Temp.txt", "Bill.txt");
-        }
+            if (!found)
+                cout << "Item Not Found!\n";
 
-        else if (choice == 2) {
-            close = true;
-        }
+            cout << "Add More Items? (y/n): ";
+            cin >> choice;
+
+        } while (choice == 'y');
+
+        generateReceipt(cart, customerName, phone);
     }
 
-    clearScreen();
-    cout << "\n\tTotal Bill: " << total << endl;
-    cout << "\tThanks For Shopping!\n";
-}
+    void generateReceipt(vector<Item> cart, string cname, string phone) {
+        int billNo = generateBillNo();
+        double subtotal = 0;
+
+        string fileName = "Bill_" + to_string(billNo) + ".txt";
+        ofstream bill(fileName, ios::app);
+        ofstream sales("sales.txt", ios::app);
+
+        bill << "=========== SUPER MARKET RECEIPT ==========\n";
+        bill << "Bill No: " << billNo << endl;
+        bill << "Date: " << currentDateTime();
+        bill << "Customer: " << cname << endl;
+        bill << "Phone: " << phone << endl;
+        bill << "--------------------------------------------\n";
+        bill << left << setw(15) << "Item"
+             << setw(10) << "Price"
+             << setw(10) << "Qty"
+             << setw(10) << "Total" << endl;
+
+        for (auto &item : cart) {
+            double total = item.price * item.quantity;
+            subtotal += total;
+
+            bill << left << setw(15) << item.name
+                 << setw(10) << item.price
+                 << setw(10) << item.quantity
+                 << setw(10) << total << endl;
+        }
+
+        double gstAmount = subtotal * GST;
+        double discount = (subtotal > 1000) ? subtotal * 0.10 : 0;
+        double finalTotal = subtotal + gstAmount - discount;
+
+        bill << "--------------------------------------------\n";
+        bill << "Subtotal: " << subtotal << endl;
+        bill << "GST (5%): " << gstAmount << endl;
+        bill << "Discount: " << discount << endl;
+        bill << "Final Total: " << finalTotal << endl;
+        bill << "============================================\n";
+        bill << "Thank You For Shopping!\n";
+
+        sales << "BillNo: " << billNo
+              << " Customer: " << cname
+              << " Total: " << finalTotal << endl;
+
+        bill.close();
+        sales.close();
+
+        cout << "\nBill Generated Successfully!\n";
+        cout << "Saved as: " << fileName << endl;
+    }
+
+    void viewSales() {
+        ifstream in("sales.txt");
+        string line;
+        cout << "\n--- SALES REPORT ---\n";
+        while (getline(in, line))
+            cout << line << endl;
+        in.close();
+    }
+};
 
 int main() {
-    Bill b;
-    bool exitProgram = false;
+    SuperMarket market;
+    int choice;
 
-    while (!exitProgram) {
-        clearScreen();
+    do {
+        cout << "\n====== SUPER MARKET BILLING ULTRA PRO ======\n";
+        cout << "1. Admin Login\n";
+        cout << "2. Customer Billing\n";
+        cout << "3. Exit\n";
+        cout << "Enter Choice: ";
+        cin >> choice;
 
-        int val;
-        cout << "\tWelcome To Super Market Billing System\n";
-        cout << "\t**************************************\n";
-        cout << "\t1. Add Item\n";
-        cout << "\t2. Print Bill\n";
-        cout << "\t3. Exit\n";
-        cout << "\tEnter Choice: ";
-        cin >> val;
+        if (choice == 1) market.adminLogin();
+        else if (choice == 2) market.billing();
 
-        if (val == 1) {
-            addItem(b);
-        }
-        else if (val == 2) {
-            printBill();
-        }
-        else if (val == 3) {
-            exitProgram = true;
-            cout << "\tGood Luck!\n";
-        }
-    }
+    } while (choice != 3);
 
     return 0;
 }
